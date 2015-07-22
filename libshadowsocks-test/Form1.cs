@@ -30,17 +30,19 @@ namespace libshadowsocks_test
             listView1.Groups.Clear();
             listView1.Items.Clear();
 
-            var s = new ishadowsocks();
-            var servers = s.GetServers();
-
-            var grp = new ListViewGroup("ishadowsocks");
-            listView1.Groups.Add(grp);
-
-            foreach(var svc in servers)
+            foreach (var site in sites)
             {
-                var item = new ListViewItem(new string[]{svc.server, svc.server_port.ToString(), svc.password, svc.method}, grp);
-                item.Tag = null;
-                listView1.Items.Add(item);
+                var servers = site.GetServers();
+
+                var grp = new ListViewGroup("ishadowsocks");
+                listView1.Groups.Add(grp);
+
+                foreach (var svc in servers)
+                {
+                    var item = new ListViewItem(new string[] { svc.server, svc.server_port.ToString(), svc.password, svc.method }, grp);
+                    item.Tag = null;
+                    listView1.Items.Add(item);
+                }
             }
         }
 
@@ -108,6 +110,33 @@ namespace libshadowsocks_test
                 item.BackColor = Color.LightGreen;
                 button2.Text = "Stop";
             }
+        }
+
+
+        IList<ISSSite> sites;
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            Logging.OpenLogFile();
+
+            var path = "sites";
+            var dll = new[] 
+            { 
+                "libshadowsocks.dll",
+                "HtmlAgilityPack.dll", 
+                "libshadowsocks-test.exe",
+            };
+            /*
+            var references = ConfigurationManager.AppSettings["references"];
+            if (!String.IsNullOrWhiteSpace(references))
+            {
+                dll = dll.Union(references.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)).ToArray();
+            }
+            */
+            var assembly = AssemblyHelper.GetAssembly(dll, path);
+
+            sites = AssemblyHelper.GetObjects<ISSSite, SSAttribute>(assembly);
+
+            button1_Click(sender, e);
         }
     }
 }

@@ -8,7 +8,8 @@ using HtmlAgilityPack;
 
 namespace libshadowsocks_test.sites
 {
-    public class ishadowsocks
+    [SSAttribute]
+    public class ishadowsocks : ISSSite
     {
         public IList<Server> GetServers()
         {
