@@ -16,6 +16,8 @@ namespace Shadowsocks
         {
             bool Handle(byte[] firstPacket, int length, Socket socket, object state);
             void Close();
+
+            event Action OnClose;
         }
 
         public class UDPState
@@ -29,6 +31,22 @@ namespace Shadowsocks
         Socket _tcpSocket;
         Socket _udpSocket;
         IList<Service> _services;
+
+
+        public event Action OnBroken;
+
+        private bool broken = false;
+        private bool forced = false;
+        private void Broken()
+        {
+            if (broken)
+                return;
+            broken = true;
+            if (forced)
+                return;
+            if (OnBroken != null)
+                OnBroken();
+        }
 
         public Listener()
         {
@@ -82,8 +100,14 @@ namespace Shadowsocks
 
             this._shareOverLAN = config.shareOverLan;
 
-            AddService(new TCPRelay(_config));
-            AddService(new UDPRelay(_config));
+            var tcpservice = new TCPRelay(_config);
+            tcpservice.OnClose += this.Broken;
+
+            var udpservice = new UDPRelay(_config);
+            udpservice.OnClose += this.Broken;
+
+            AddService(tcpservice);
+            AddService(udpservice);
 
             try
             {
@@ -119,12 +143,15 @@ namespace Shadowsocks
             catch (SocketException)
             {
                 _tcpSocket.Close();
+                this.Broken();
                 throw;
             }
         }
 
         public void Stop()
         {
+            forced = true;
+
             if (_tcpSocket != null)
             {
                 _tcpSocket.Close();
@@ -162,6 +189,7 @@ namespace Shadowsocks
             }
             catch (Exception)
             {
+                this.Broken();
             }
             finally
             {
@@ -175,6 +203,7 @@ namespace Shadowsocks
                 }
                 catch (Exception)
                 {
+                    this.Broken();
                 }
             }
         }
@@ -201,6 +230,7 @@ namespace Shadowsocks
             catch (Exception e)
             {
                 Console.WriteLine(e);
+                this.Broken();
             }
             finally
             {
@@ -248,6 +278,7 @@ namespace Shadowsocks
             {
                 Console.WriteLine(e);
                 conn.Close();
+                this.Broken();
             }
         }
     }

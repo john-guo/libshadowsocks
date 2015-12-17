@@ -15,6 +15,8 @@ namespace Shadowsocks.Relay
         private Configuration _config;
         private Handler handler;
 
+        public event Action OnClose;
+
         public TCPRelay(Configuration config)
         {
             this._config = config;
@@ -32,6 +34,7 @@ namespace Shadowsocks.Relay
             }
             socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, true);
             handler = new Handler();
+            handler.OnClose += this.OnClose;
             handler.connection = socket;
             Server server = _config.server;
             handler.encryptor = EncryptorFactory.GetEncryptor(server.method, server.password);
@@ -45,6 +48,7 @@ namespace Shadowsocks.Relay
         {
             if (handler != null)
                 handler.Close();
+
         }
     }
 
@@ -79,6 +83,8 @@ namespace Shadowsocks.Relay
         
         private object encryptionLock = new object();
         private object decryptionLock = new object();
+
+        public event Action OnClose;
 
         public void Start(byte[] firstPacket, int length)
         {
@@ -135,6 +141,11 @@ namespace Shadowsocks.Relay
                 {
                     ((IDisposable)encryptor).Dispose();
                 }
+            }
+
+            if (OnClose != null)
+            {
+                OnClose();
             }
         }
 

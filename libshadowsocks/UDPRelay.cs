@@ -13,6 +13,9 @@ namespace Shadowsocks.Relay
     {
         private Configuration _config;
         private LRUCache<IPEndPoint, UDPHandler> _cache;
+        
+        public event Action OnClose;
+        
         public UDPRelay(Configuration config)
         {
             this._config = config;
@@ -45,6 +48,7 @@ namespace Shadowsocks.Relay
             if (handler == null)
             {
                 handler = new UDPHandler(socket, _config.server, remoteEndPoint);
+                handler.OnClose += this.OnClose;
                 _cache.add(remoteEndPoint, handler);
             }
             handler.Send(firstPacket, length);
@@ -63,6 +67,8 @@ namespace Shadowsocks.Relay
             private IPEndPoint _localEndPoint;
             private IPEndPoint _remoteEndPoint;
 
+            public event Action OnClose;
+            
             public UDPHandler(Socket local, Server server, IPEndPoint localEndPoint)
             {
                 _local = local;
@@ -115,11 +121,9 @@ namespace Shadowsocks.Relay
                     _local.SendTo(sendBuf, outlen + 3, 0, _localEndPoint);
                     Receive();
                 }
-                catch (ObjectDisposedException)
-                {
-                }
                 catch (Exception)
                 {
+                    this.Close();
                 }
                 finally
                 {
@@ -139,6 +143,7 @@ namespace Shadowsocks.Relay
                 }
                 finally
                 {
+                    OnClose();
                 }
             }
         }

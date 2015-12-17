@@ -14,9 +14,12 @@ namespace libshadowsocks_test
 {
     public partial class Form1 : Form
     {
+        string title;
+        int count = 0;
         public Form1()
         {
             InitializeComponent();
+            title = this.Text;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -64,7 +67,6 @@ namespace libshadowsocks_test
                 button2.Text = "Stop";
             }
 
-
             textBox1.Text = item.SubItems[0].Text;
             textBox2.Text = item.SubItems[1].Text;
             textBox3.Text = item.SubItems[2].Text;
@@ -90,6 +92,7 @@ namespace libshadowsocks_test
             else
             {
                 var ss = new Listener();
+                ss.OnBroken += ss_Broken;
                 try
                 {
                     ss.Start(textBox1.Text,
@@ -105,11 +108,24 @@ namespace libshadowsocks_test
                 }
                 listeners.Add(ss);
 
+                this.Text = String.Format("{0}({1})", title, ++count);
+
                 item.SubItems.AddRange(new string[] { textBox5.Text, checkBox1.Checked ? "Y" : "N" });
                 item.Tag = ss;
                 item.BackColor = Color.LightGreen;
                 button2.Text = "Stop";
             }
+        }
+
+        void ss_Broken()
+        {
+            this.Invoke((Action)delegate
+            {
+                var ind = listView1.SelectedIndices[0];
+                button1.PerformClick();
+                listView1.Items[ind].Selected = true;
+                button2.PerformClick();
+            });
         }
 
 
@@ -136,7 +152,7 @@ namespace libshadowsocks_test
 
             sites = AssemblyHelper.GetObjects<ISSSite, SSAttribute>(assembly);
 
-            button1_Click(sender, e);
+            button1.PerformClick();
         }
     }
 }
