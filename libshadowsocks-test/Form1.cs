@@ -75,9 +75,11 @@ namespace libshadowsocks_test
         }
 
         private List<Listener> listeners = new List<Listener>();
+        private int lastSelected = 0;
         private void button2_Click(object sender, EventArgs e)
         {
             var item = listView1.SelectedItems[0];
+            lastSelected = listView1.SelectedIndices[0];
 
             if (item.Tag != null)
             {
@@ -121,9 +123,16 @@ namespace libshadowsocks_test
         {
             this.Invoke((Action)delegate
             {
-                var ind = listView1.SelectedIndices[0];
                 button1.PerformClick();
-                listView1.Items[ind].Selected = true;
+                if (listView1.Items.Count <= 0)
+                {
+                    Task.Delay(3000).ContinueWith(t => ss_Broken());
+                    return;
+                }
+                if (listView1.Items.Count <= lastSelected)
+                    lastSelected = 0;
+
+                listView1.Items[lastSelected].Selected = true;
                 button2.PerformClick();
             });
         }
