@@ -37,7 +37,8 @@ namespace libshadowsocks_test
             {
                 var servers = site.GetServers();
 
-                var grp = new ListViewGroup("ishadowsocks");
+
+                var grp = new ListViewGroup(site.GetType().Name);
                 listView1.Groups.Add(grp);
 
                 foreach (var svc in servers)
@@ -121,20 +122,33 @@ namespace libshadowsocks_test
 
         void ss_Broken()
         {
-            this.Invoke((Action)delegate
+            Action invoker = () =>
             {
-                button1.PerformClick();
-                if (listView1.Items.Count <= 0)
+                try
+                {
+                    button1.PerformClick();
+                    if (listView1.Items.Count <= 0)
+                    {
+                        Task.Delay(3000).ContinueWith(t => ss_Broken());
+                        return;
+                    }
+                    if (listView1.Items.Count <= lastSelected)
+                        lastSelected = 0;
+
+                    listView1.Items[lastSelected].Selected = true;
+                    button2.PerformClick();
+                }
+                catch
                 {
                     Task.Delay(3000).ContinueWith(t => ss_Broken());
-                    return;
                 }
-                if (listView1.Items.Count <= lastSelected)
-                    lastSelected = 0;
+            };
 
-                listView1.Items[lastSelected].Selected = true;
-                button2.PerformClick();
-            });
+
+            if (InvokeRequired)
+                this.Invoke(invoker);
+            else
+                invoker();
         }
 
 
@@ -161,7 +175,7 @@ namespace libshadowsocks_test
 
             sites = AssemblyHelper.GetObjects<ISSSite, SSAttribute>(assembly);
 
-            button1.PerformClick();
+            ss_Broken();
         }
     }
 }
